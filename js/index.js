@@ -14,11 +14,7 @@ const progressPct = document.getElementById('progressPct');
 const tipoDetected = document.getElementById('tipoDetected');
 const tipoNombre = document.getElementById('tipoNombre');
 
-const HOJAS_VALIDAS = {
-  "PIM-SJ-J": "SANIPES_PIM",
-  "CERT-SL-J": "SANIPES_CERT",
-  "COMP-SL-J": "SANIPES_COMP"
-};
+const SHEET_NAME = "SANIPES_DATA";
 
 let resultadoPendiente = null;
 
@@ -30,20 +26,20 @@ function setProgreso(pct, label) {
 }
 function ocultarProgreso() { setTimeout(() => { progressBox.style.display = 'none'; }, 1500); }
 
-function procesarEnWorker(hojas) {
+function procesarEnWorker(rows) {
   return new Promise((resolve, reject) => {
     const worker = new Worker('js/worker.js');
     worker.onmessage = (e) => {
       const data = e.data;
       worker.terminate();
-      if (data.ok) resolve(data.resultados);
+      if (data.ok) resolve(data.resultado);
       else reject(new Error(data.error || 'Error en worker'));
     };
     worker.onerror = (err) => {
       worker.terminate();
       reject(new Error('Error del worker: ' + (err.message || 'desconocido')));
     };
-    worker.postMessage({ hojas });
+    worker.postMessage({ rows });
   });
 }
 
@@ -65,35 +61,28 @@ fileInput.addEventListener('change', async function (e) {
     setProgreso(15, 'Abriendo Excel…');
     const workbook = XLSX.read(data, { type: 'array', cellDates: false, cellNF: false, cellStyles: false });
 
-    const encontradas = workbook.SheetNames.filter(n => HOJAS_VALIDAS[n.trim()]);
-    if (encontradas.length === 0) {
+    const hoja = workbook.SheetNames.find(n => n.toUpperCase().includes("PIM-SJ-J"));
+    if (!hoja) {
       setProgreso(100, 'Error');
-      mostrarMensaje('❌ El Excel debe tener las hojas: PIM-SJ-J, CERT-SL-J o COMP-SL-J.', 'error');
+      mostrarMensaje('❌ El Excel debe tener la hoja PIM-SJ-J.', 'error');
       ocultarProgreso();
       return;
     }
 
-    tipoNombre.textContent = encontradas.join(", ");
+    tipoNombre.textContent = hoja;
     tipoDetected.style.display = 'flex';
 
-    const hojas = [];
-    let totalFilas = 0;
-    for (let i = 0; i < encontradas.length; i++) {
-      const nombre = encontradas[i];
-      setProgreso(30 + (i / encontradas.length) * 25, `Leyendo ${nombre}…`);
-      const worksheet = workbook.Sheets[nombre];
-      const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: true, defval: '' });
-      hojas.push({ nombre: nombre.trim(), rows });
-      totalFilas += rows.length;
-    }
+    setProgreso(30, `Leyendo ${hoja}…`);
+    const worksheet = workbook.Sheets[hoja];
+    const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: true, defval: '' });
 
-    setProgreso(65, `Procesando ${totalFilas} filas…`);
-    const agregado = await procesarEnWorker(hojas);
+    setProgreso(55, `Procesando ${rows.length} filas…`);
+    const agregado = await procesarEnWorker(rows);
 
-    resultadoPendiente = { registros: agregado };
+    resultadoPendiente = { payload: agregado };
 
     const li = document.createElement('li');
-    li.innerHTML = `<i class="fas fa-check-circle"></i> ${encontradas.length} hojas procesadas`;
+    li.innerHTML = `<i class="fas fa-check-circle"></i> ${hoja} procesada`;
     sheetList.appendChild(li);
 
     setProgreso(100, `Procesado`);
@@ -114,20 +103,12 @@ btnSubir.addEventListener('click', async function () {
   btnSubir.textContent = 'Subiendo…';
   setProgreso(0, `Subiendo datos…`);
   try {
-    const { registros } = resultadoPendiente;
+    const { payload } = resultadoPendiente;
     
-    await supabaseClient.from('dashboard_data').delete().in('sheet_name', Object.values(HOJAS_VALIDAS));
+    await supabaseClient.from('dashboard_data').delete().eq('sheet_name', SHEET_NAME);
 
-    const datosInsertar = registros.map(r => ({
-      sheet_name: r.sheetName,
-      row_index: 0,
-      data: r.data
-    }));
-
-    if (datosInsertar.length > 0) {
-      const { error } = await supabaseClient.from('dashboard_data').insert(datosInsertar);
-      if (error) throw error;
-    }
+    const { error } = await supabaseClient.from('dashboard_data').insert([{ sheet_name: SHEET_NAME, row_index: 0, data: payload }]);
+    if (error) throw error;
 
     setProgreso(100, `Subido`);
     mostrarMensaje(`✅ Datos subidos correctamente.`, 'ok');

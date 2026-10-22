@@ -44,9 +44,9 @@
         <aside class="sidebar">
             <p class="nav-label">Paneles</p>
             <nav class="tabs" id="dashTabs" aria-label="Secciones">
-                <a href="#" class="tab active" data-seccion="pim"><i class="fas fa-coins"></i><span>PIM</span></a>
-                <a href="#" class="tab" data-seccion="cert"><i class="fas fa-file-signature"></i><span>Certificaciones</span></a>
-                <a href="#" class="tab" data-seccion="comp"><i class="fas fa-handshake"></i><span>Compromisos</span></a>
+                <a href="#" class="tab active" data-seccion="evolucion"><i class="fas fa-chart-line"></i><span>Evolución</span></a>
+                <a href="#" class="tab" data-seccion="seguimiento"><i class="fas fa-table-list"></i><span>Seguimiento</span></a>
+                <a href="#" class="tab" data-seccion="tablas"><i class="fas fa-file-excel"></i><span>Tablas Excel</span></a>
             </nav>
             <p class="nav-label">Sistema y reportes</p>
             <div class="nav-actions">
@@ -64,41 +64,56 @@
         </aside>
 
         <main class="main">
-            <!-- PIM -->
-            <section id="pim" class="dashboard-section" hidden>
+            <!-- EVOLUCIÓN -->
+            <section id="evolucion" class="dashboard-section" hidden>
                 <div class="page-head">
                     <div>
-                        <h1>Presupuesto (PIM)</h1>
-                        <p>Ejecución presupuestal por oficina</p>
+                        <h1>Evolución del Presupuesto</h1>
+                        <p>PIM · Certificado · Compromiso · Devengado</p>
                     </div>
                 </div>
-                <section class="kpi-row" id="kpiPim"></section>
-                <section class="charts-exec" id="gridPim"></section>
+                <section class="kpi-row" id="kpiEvolucion"></section>
+                <section class="charts-exec" id="gridEvolucion"></section>
             </section>
 
-            <!-- CERT -->
-            <section id="cert" class="dashboard-section" hidden>
-                <div class="page-head">
-                    <div>
-                        <h1>Certificaciones (CERT)</h1>
-                        <p>Certificados por rubro y oficina</p>
-                    </div>
-                </div>
-                <section class="kpi-row" id="kpiCert"></section>
-                <section class="charts-exec" id="gridCert"></section>
-            </section>
+            <!-- SEGUIMIENTO -->
+            <section id="seguimiento" class="dashboard-section" hidden>
+    <div class="page-head">
+        <div>
+            <h1>Seguimiento por Dependencia</h1>
+            <p>Ejecución y saldos por oficina</p>
+        </div>
+    </div>
+    
+    <!-- ESTA ES LA LÍNEA QUE FALTA -->
+    <section class="filters-row" id="filtersSeguimiento"></section>
 
-            <!-- COMP -->
-            <section id="comp" class="dashboard-section" hidden>
-                <div class="page-head">
-                    <div>
-                        <h1>Compromisos (COMP)</h1>
-                        <p>Compromisos, giros y pagos</p>
-                    </div>
-                </div>
-                <section class="kpi-row" id="kpiComp"></section>
-                <section class="charts-exec" id="gridComp"></section>
-            </section>
+    <section class="kpi-row" id="kpiSeguimiento"></section>
+    <section class="charts-exec" id="gridSeguimiento"></section>
+</section>
+<!-- TABLAS EXCEL -->
+<section id="tablas" class="dashboard-section" hidden>
+    <div class="page-head">
+        <div>
+            <h1>Tablas del Excel</h1>
+            <p>Resumen jerárquico y evolución</p>
+        </div>
+    </div>
+    
+    <!-- Reutilizamos los filtros de seguimiento -->
+    <section class="filters-row" id="filtersTablas"></section>
+
+    <section class="charts-exec" id="gridTablas">
+        <article class="card span-12">
+            <div class="card-head"><h3>TD-PIM-EJE (Evolución)</h3><p>Oficina · PIM · Cert · Comp · Dev · Meses</p></div>
+            <div id="tablaEje" class="mini-table"></div>
+        </article>
+        <article class="card span-12">
+            <div class="card-head"><h3>TD-PIM (Seguimiento)</h3><p>Dependencia · Saldos · Proyección Nov-Dic</p></div>
+            <div id="tablaPim" class="mini-table"></div>
+        </article>
+    </section>
+</section>
         </main>
     </div>
 
