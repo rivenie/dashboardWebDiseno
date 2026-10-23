@@ -201,3 +201,7 @@ button { font-family: inherit; color: inherit; }
     white-space: nowrap;
     padding: 10px 14px;
 }
+
+.tbl tr.row-parent:hover { background-color: #F1F5F9; }
+.tbl td table { margin: 0; padding: 0; border: none; }
+.tbl td table td { border-bottom: 1px solid #EEF2F6 !important; padding: 8px 12px; }

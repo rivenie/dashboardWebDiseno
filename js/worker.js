@@ -21,39 +21,51 @@ function num(v) {
 }
 
 function procesarSANIPES(rows) {
-  const hIdx = 0; // Fila 1 (Cabecera)
+  const hIdx = 0;
   const headers = (rows[hIdx] || []).map(h => (h || "").toString().trim().toUpperCase());
   
-  const cOfi = headers.findIndex(h => h.includes("OFICINA") && !h.includes("META"));
+  const cOfi = headers.findIndex(h => h === "OFICINA");
+  const cDep = headers.findIndex(h => h === "DEPENDENCIA");
   const cMeta = headers.findIndex(h => h === "META");
-  const cEsp = headers.findIndex(h => h.includes("ESP GASTO")); // Columna K
+  const cGen = headers.findIndex(h => h === "GEN");
+  const cEsp = headers.findIndex(h => h.includes("ESP GASTO"));
   
-  const cPim = headers.findIndex(h => h.startsWith("PIM") && !h.includes("%"));
-  const cCert = headers.findIndex(h => h.startsWith("CERTIFICADO") && !h.includes("%") && !h.includes("SALDO"));
+  const cPim = headers.findIndex(h => h.startsWith("PIM") && h.includes("(C)"));
+  const cCert = headers.findIndex(h => h.startsWith("CERTIFICADO") && h.includes("(D)"));
   const cCompAnual = headers.findIndex(h => h.includes("COMPROMISO ANUAL"));
-  const cComp = headers.findIndex(h => h.startsWith("COMPROMISO") && !h.includes("ANUAL") && !h.includes("SALDO") && !h.includes("%"));
-  const cDev = headers.findIndex(h => h.startsWith("DEVENGADO") && !h.includes("SALDO") && !h.includes("%") && !h.includes("PROY"));
-
+  const cComp = headers.findIndex(h => h.startsWith("COMPROMISO") && !h.includes("ANUAL"));
+  const cDev = headers.findIndex(h => h.startsWith("DEVENGADO") && h.includes("(G)"));
+  const cSaldoCert = headers.findIndex(h => h.includes("SALDO") && h.includes("PIM - CERTIFICADO"));
+  
+  const cProgOct = headers.findIndex(h => h.includes("DEV PROY 10-OCT"));
+  const cDevOct = headers.findIndex(h => h.includes("DEV 10-OCT"));
+  const cProgNov = headers.findIndex(h => h.includes("DEV PROY 11-NOV"));
+  const cProgDic = headers.findIndex(h => h.includes("DEV PROY 12-DIC"));
+  
   const cMeses = ["ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SET","OCT","NOV","DIC"].map(m => 
-    headers.findIndex(h => h.includes("DEV PROY") && h.includes(m))
+    headers.findIndex(h => h.includes("DEV ") && h.includes(m) && !h.includes("PROY"))
   );
 
   const filas = [];
-  const porOficina = {};
-  const porEspGasto = {};
   const porMes = MESES.map(m => ({ mes: m, valor: 0 }));
+  
+  // Volvemos a agregar el objeto para el gráfico de Evolución
+  const porEspGasto = {}; 
 
   let tPim = 0, tCert = 0, tCompAnual = 0, tComp = 0, tDev = 0;
-  let progNov = 0, progDic = 0;
+  let tSaldoCert = 0, tProgOct = 0, tDevOct = 0, tProgNov = 0, tProgDic = 0;
 
   for (let i = hIdx + 1; i < rows.length; i++) {
     const r = rows[i]; if (!r) continue;
     const ofi = norm(r[cOfi]); 
     if (!ofi || ofi.toUpperCase().includes("TOTAL")) continue;
 
+    const dep = norm(r[cDep]) || "SIN DEPENDENCIA";
     const meta = norm(r[cMeta]);
-    // Limpiar el código del ESP Gasto
-    let esp = norm(r[cEsp]).replace(/^[0-9\.]+\s*-\s*/, '').trim();
+    const gen = norm(r[cGen]);
+    
+    let esp = norm(r[cEsp]);
+    if (esp.includes("-")) esp = esp.split("-").slice(1).join("-").trim();
     if (!esp) esp = "SIN ESPECÍFICA";
 
     const pim = num(r[cPim]);
@@ -61,10 +73,22 @@ function procesarSANIPES(rows) {
     const compAnual = num(r[cCompAnual]);
     const comp = num(r[cComp]);
     const dev = num(r[cDev]);
+    const saldoCert = num(r[cSaldoCert]);
+    const progOct = num(r[cProgOct]);
+    const devOct = num(r[cDevOct]);
+    const progNov = num(r[cProgNov]);
+    const progDic = num(r[cProgDic]);
+    
+    const difOct = progOct - devOct;
+    const difAnual = pim - dev - progNov - progDic;
+    const pctEjeOct = pim ? (devOct / pim) * 100 : 0;
 
     tPim += pim; tCert += cert; tCompAnual += compAnual; tComp += comp; tDev += dev;
+    tSaldoCert += saldoCert; tProgOct += progOct; tDevOct += devOct; tProgNov += progNov; tProgDic += progDic;
 
-    // Leer los meses para la tabla y la proyección
+    // Llenamos el objeto porEspGasto para que el gráfico de Evolución funcione
+    if (esp && dev > 0) porEspGasto[esp] = (porEspGasto[esp] || 0) + dev;
+
     const devMesFila = new Array(12).fill(0);
     cMeses.forEach((col, mIdx) => {
       if (col >= 0) {
@@ -74,38 +98,16 @@ function procesarSANIPES(rows) {
       }
     });
 
-    // Capturar Noviembre y Diciembre para las columnas de proyección
-    const proyOct = devMesFila[9];
-    const proyNov = devMesFila[10];
-    const proyDic = devMesFila[11];
-    progNov += proyNov;
-    progDic += proyDic;
-
-    // Acumular por Oficina
-    if (!porOficina[ofi]) porOficina[ofi] = { pim: 0, cert: 0, compAnual: 0, comp: 0, dev: 0 };
-    porOficina[ofi].pim += pim;
-    porOficina[ofi].cert += cert;
-    porOficina[ofi].compAnual += compAnual;
-    porOficina[ofi].comp += comp;
-    porOficina[ofi].dev += dev;
-
-    // Acumular por ESP Gasto (solo si tiene devengado)
-    if (esp && dev > 0) porEspGasto[esp] = (porEspGasto[esp] || 0) + dev;
-
-    // Estructura de la fila con todos los meses
+    // Busca esta parte en worker.js (dentro del for):
     filas.push({ 
-      ofi, meta, esp, pim, cert, compAnual, comp, dev, 
-      progOct: proyOct, progNov: proyNov, progDic: proyDic, devMes: devMesFila 
+      ofi, dep, meta, gen, esp, pim, cert, compAnual, comp, dev, 
+      saldoCert, progOct, devOct, progNov, progDic, difOct, difAnual, pctEjeOct,
+      devMes: devMesFila // <--- Asegúrate de que esto esté aquí
     });
   }
 
-  const saldoCert = tPim - tCert;
-  const saldoReal = tPim - tDev;
-  const difAnual = tPim - tDev - progNov - progDic;
-
   return {
-    kpis: { tPim, tCert, tCompAnual, tComp, tDev, saldoCert, saldoReal, progNov, progDic, difAnual },
-    porOficina: Object.entries(porOficina).map(([k, v]) => ({ nombre: k, ...v })).sort((a, b) => b.pim - a.pim),
+    kpis: { tPim, tCert, tCompAnual, tComp, tDev, tSaldoCert, tProgOct, tDevOct, tProgNov, tProgDic },
     porEspGasto: Object.entries(porEspGasto).map(([k, v]) => ({ nombre: k, valor: v })).sort((a, b) => b.valor - a.valor),
     porMes,
     filas
