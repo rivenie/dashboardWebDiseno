@@ -171,7 +171,20 @@ function construirLayoutInterno() {
     plotCard("eLineas", "Evolución Mensual", "Devengado (Ene - Dic)", 8, "tall"),
     donutCard("eGasto", "Devengado por Tipo de Gasto", "Distribución", 4),
     slotCard("eTabla", "Resumen Mensual", "Mes · Devengado", 12),
-    `<article class="card span-12"><div class="card-head"><h3>TD-PIM-EJE (Evolución por Dependencia)</h3><p>Haz clic en los signos (+) para desplegar.</p></div><div id="eTablaEje" class="mini-table"></div></article>`
+    
+    `<article class="card span-12">
+      <div class="card-head" style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
+        <div><h3>TD-PIM-EJE (Evolución por Dependencia)</h3><p>Haz clic en los signos (+) para desplegar.</p></div>
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+          <select id="eFilterDepEje" style="min-width:180px; border:1px solid #E2E8F0; padding:6px 10px; border-radius:6px; font-size:12px; color:#1E293B; outline:none;"><option value="">Todas las Deps</option></select>
+          <input type="text" id="eSearchDepEje" placeholder="Buscar Dep..." style="width:130px; border:1px solid #E2E8F0; padding:6px 10px; border-radius:6px; font-size:12px; color:#1E293B; outline:none;">
+          
+          <select id="eFilterOfiEje" style="min-width:180px; border:1px solid #E2E8F0; padding:6px 10px; border-radius:6px; font-size:12px; color:#1E293B; outline:none;"><option value="">Todas las Ofis</option></select>
+          <input type="text" id="eSearchOfiEje" placeholder="Buscar Ofi..." style="width:130px; border:1px solid #E2E8F0; padding:6px 10px; border-radius:6px; font-size:12px; color:#1E293B; outline:none;">
+        </div>
+      </div>
+      <div id="eTablaEje" class="mini-table"></div>
+    </article>`
   ].join("");
 
   // SEGUIMIENTO
@@ -194,7 +207,20 @@ function construirLayoutInterno() {
   $("gridSeguimiento").innerHTML = [
     plotCard("sBarras", "Avance por Dependencia", "PIM vs Devengado", 8, "tall"),
     donutCard("sDona", "Distribución del Saldo", "PIM - Certificado", 4),
-    `<article class="card span-12"><div class="card-head"><h3>Seguimiento Detallado (TD-PIM)</h3><p>Haz clic en los signos (+) para desplegar.</p></div><div id="sTabla" class="mini-table"></div></article>`
+    
+    `<article class="card span-12">
+      <div class="card-head" style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
+        <div><h3>Seguimiento Detallado (TD-PIM)</h3><p>Haz clic en los signos (+) para desplegar.</p></div>
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+          <select id="sFilterDepSeg" style="min-width:180px; border:1px solid #E2E8F0; padding:6px 10px; border-radius:6px; font-size:12px; color:#1E293B; outline:none;"><option value="">Todas las Deps</option></select>
+          <input type="text" id="sSearchDepSeg" placeholder="Buscar Dep..." style="width:130px; border:1px solid #E2E8F0; padding:6px 10px; border-radius:6px; font-size:12px; color:#1E293B; outline:none;">
+          
+          <select id="sFilterOfiSeg" style="min-width:180px; border:1px solid #E2E8F0; padding:6px 10px; border-radius:6px; font-size:12px; color:#1E293B; outline:none;"><option value="">Todas las Ofis</option></select>
+          <input type="text" id="sSearchOfiSeg" placeholder="Buscar Ofi..." style="width:130px; border:1px solid #E2E8F0; padding:6px 10px; border-radius:6px; font-size:12px; color:#1E293B; outline:none;">
+        </div>
+      </div>
+      <div id="sTabla" class="mini-table"></div>
+    </article>`
   ].join("");
 }
 
@@ -207,9 +233,7 @@ function llenarSegmentadores() {
     [...set].sort().forEach(v => { const o = document.createElement("option"); o.value = v; o.textContent = v; sel.appendChild(o); });
   };
   
-  // Filtros Seguimiento
   const sDeps = new Set(), sOfis = new Set(), sGens = new Set(), sEsps = new Set(), sMetas = new Set();
-  // Filtros Evolución
   const evoDeps = new Set(), evoOfis = new Set(), evoGens = new Set(), evoEsps = new Set(), evoMetas = new Set();
 
   state.data.filas.forEach(f => { 
@@ -231,6 +255,11 @@ function llenarSegmentadores() {
   llenar("eGen", evoGens, "Gen");
   llenar("eEsp", evoEsps, "ESP Gasto");
   llenar("eMeta", evoMetas, "Meta");
+
+  llenar("eFilterDepEje", evoDeps, "Todas las Deps");
+  llenar("eFilterOfiEje", evoOfis, "Todas las Ofis");
+  llenar("sFilterDepSeg", sDeps, "Todas las Deps");
+  llenar("sFilterOfiSeg", sOfis, "Todas las Ofis");
 }
 
 function renderEvolucion() {
@@ -288,9 +317,22 @@ function renderEvolucion() {
     filasTabla
   );
 
-  // ---- LÓGICA TD-PIM-EJE ----
+  // ---- TD-PIM-EJE (INTERNOS) ----
+  const searchDepEje = $("eSearchDepEje") ? $("eSearchDepEje").value.toLowerCase() : "";
+  const filterDepEje = $("eFilterDepEje") ? $("eFilterDepEje").value : "";
+  const searchOfiEje = $("eSearchOfiEje") ? $("eSearchOfiEje").value.toLowerCase() : "";
+  const filterOfiEje = $("eFilterOfiEje") ? $("eFilterOfiEje").value : "";
+
+  const filasEje = filasFiltradas.filter(f => {
+    if (filterDepEje && f.dep !== filterDepEje) return false;
+    if (searchDepEje && !f.dep.toLowerCase().includes(searchDepEje)) return false;
+    if (filterOfiEje && f.ofi !== filterOfiEje) return false;
+    if (searchOfiEje && !f.ofi.toLowerCase().includes(searchOfiEje)) return false;
+    return true;
+  });
+
   const depMap = {};
-  filasFiltradas.forEach(f => {
+  filasEje.forEach(f => {
     if (!depMap[f.dep]) depMap[f.dep] = { pim: 0, cert: 0, compAnual: 0, comp: 0, dev: 0, meses: new Array(12).fill(0), ofis: {} };
     const d = depMap[f.dep];
     d.pim += f.pim; d.cert += f.cert; d.compAnual += f.compAnual; d.comp += f.comp; d.dev += f.dev;
@@ -313,7 +355,6 @@ function renderEvolucion() {
   });
 
   const MESES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Set", "Oct"];
-  
   const cRowEje = (label, data, isSub=false, hasChild=false, levelId="") => {
     const p = (v) => data.pim ? fmt((v / data.pim)*100, 1) + "%" : "-";
     return `
@@ -341,20 +382,27 @@ function renderEvolucion() {
     <th class="num">% Cert</th><th class="num">% Comp</th><th class="num">% Dev</th>
   </tr></thead><tbody>`;
 
+  let tPimEje = 0, tCertEje = 0, tCompAnualEje = 0, tCompEje = 0, tDevEje = 0;
+  let tMeses = new Array(12).fill(0);
+
   Object.keys(depMap).sort().forEach((depName, iDep) => {
-    html += cRowEje(depName, depMap[depName], false, true, `eje-dep-${iDep}`);
+    const d = depMap[depName];
+    tPimEje += d.pim; tCertEje += d.cert; tCompAnualEje += d.compAnual; tCompEje += d.comp; tDevEje += d.dev;
+    if (d.meses) d.meses.forEach((v, i) => { tMeses[i] += v; });
+
+    html += cRowEje(depName, d, false, true, `eje-dep-${iDep}`);
     
-    Object.keys(depMap[depName].ofis).sort().forEach((ofiName, iOfi) => {
+    Object.keys(d.ofis).sort().forEach((ofiName, iOfi) => {
       html += `<tr class="child eje-dep-${iDep}" style="display:none; background:#F8FAFC;"><td colspan="19" style="padding:0;"><table style="width:100%"><tbody>`;
-      html += cRowEje(ofiName, depMap[depName].ofis[ofiName], true, true, `eje-ofi-${iDep}-${iOfi}`);
+      html += cRowEje(ofiName, d.ofis[ofiName], true, true, `eje-ofi-${iDep}-${iOfi}`);
 
-      Object.keys(depMap[depName].ofis[ofiName].metas).sort().forEach((metaName, iMeta) => {
+      Object.keys(d.ofis[ofiName].metas).sort().forEach((metaName, iMeta) => {
         html += `<tr class="child eje-ofi-${iDep}-${iOfi}" style="display:none;"><td colspan="19" style="padding:0;"><table style="width:100%"><tbody>`;
-        html += cRowEje(`${metaName} - ${ofiName}`, depMap[depName].ofis[ofiName].metas[metaName], true, true, `eje-meta-${iDep}-${iOfi}-${iMeta}`);
+        html += cRowEje(`${metaName} - ${ofiName}`, d.ofis[ofiName].metas[metaName], true, true, `eje-meta-${iDep}-${iOfi}-${iMeta}`);
 
-        Object.keys(depMap[depName].ofis[ofiName].metas[metaName].gens).sort().forEach((genName) => {
+        Object.keys(d.ofis[ofiName].metas[metaName].gens).sort().forEach((genName) => {
           html += `<tr class="child eje-meta-${iDep}-${iOfi}-${iMeta}" style="display:none;"><td colspan="19" style="padding:0;"><table style="width:100%"><tbody>`;
-          html += cRowEje(genName || "SIN GEN", depMap[depName].ofis[ofiName].metas[metaName].gens[genName], true, false, "");
+          html += cRowEje(genName || "SIN GEN", d.ofis[ofiName].metas[metaName].gens[genName], true, false, "");
           html += `</tbody></table></td></tr>`;
         });
         html += `</tbody></table></td></tr>`;
@@ -362,6 +410,25 @@ function renderEvolucion() {
       html += `</tbody></table></td></tr>`;
     });
   });
+
+  const pTotalCert = tPimEje ? fmt((tCertEje / tPimEje)*100, 1) + "%" : "-";
+  const pTotalComp = tPimEje ? fmt((tCompEje / tPimEje)*100, 1) + "%" : "-";
+  const pTotalDev = tPimEje ? fmt((tDevEje / tPimEje)*100, 1) + "%" : "-";
+  
+  html += `
+    <tr style="font-weight:700; background:#F1F5F9; border-top:2px solid #CBD5E1;">
+      <td>Total general</td>
+      <td class="num">${fmt(tPimEje, 2)}</td>
+      <td class="num">${fmt(tCertEje, 2)}</td>
+      <td class="num">${fmt(tCompAnualEje, 2)}</td>
+      <td class="num">${fmt(tCompEje, 2)}</td>
+      <td class="num">${fmt(tDevEje, 2)}</td>
+      ${tMeses.slice(0, 10).map(v => `<td class="num">${v > 0 ? fmt(v, 2) : "-"}</td>`).join("")}
+      <td class="num">${pTotalCert}</td>
+      <td class="num">${pTotalComp}</td>
+      <td class="num">${pTotalDev}</td>
+    </tr>
+  `;
   html += `</tbody></table></div>`;
   
   if ($("eTablaEje")) {
@@ -392,7 +459,7 @@ function renderSeguimiento() {
   const sEsp = $("sEsp") ? $("sEsp").value : "";
   const sMeta = $("sMeta") ? $("sMeta").value : "";
 
-  const filas = state.data.filas.filter(f => {
+  const filasFiltradas = state.data.filas.filter(f => {
     if (sDep && f.dep !== sDep) return false;
     if (sOfi && f.ofi !== sOfi) return false;
     if (sGen && f.gen !== sGen) return false;
@@ -401,23 +468,35 @@ function renderSeguimiento() {
     return true;
   });
 
-  // KPIs
   let tPim = 0, tCert = 0, tDev = 0, tProg = 0;
-  filas.forEach(f => {
+  filasFiltradas.forEach(f => {
     tPim += f.pim; tCert += f.cert; tDev += f.dev;
-    tProg += f.progOct; // <-- Ahora toma la proyección de Octubre
+    tProg += f.progOct; 
   });
 
   $("kpiSeguimiento").innerHTML = [
-    heroCard({ title: "PIM (Filtrado)", value: "S/ " + fmt(tPim), unit: "", note: `Programación Nov-Dic: ${fmtM(tProg)}`, badge: `Saldo Total: ${fmtM(tPim - tDev)}` }),
+    heroCard({ title: "PIM (Filtrado)", value: "S/ " + fmt(tPim), unit: "", note: `Programación Oct: ${fmtM(tProg)}`, badge: `Saldo Total: ${fmtM(tPim - tDev)}` }),
     kpiCard({ icon: "fa-file-signature", tone: "gold", title: "% Certificado", value: fmt(tPim ? (tCert/tPim)*100 : 0, 2) + "%", unit: "", pct: tPim ? (tCert/tPim)*100 : 0, barLabel: "Cert / PIM", foot: fmtM(tCert) }),
     kpiCard({ icon: "fa-coins", tone: "amber", title: "% Devengado", value: fmt(tPim ? (tDev/tPim)*100 : 0, 2) + "%", unit: "", pct: tPim ? (tDev/tPim)*100 : 0, barLabel: "Dev / PIM", foot: fmtM(tDev) }),
     kpiCard({ icon: "fa-calendar-check", tone: "green", title: "Programación", value: fmtM(tProg), unit: "", pct: tPim ? (tProg/tPim)*100 : 0, barLabel: "Prog Oct", foot: "Proyección" }),
   ].join("");
 
-  // Agrupación de Datos
+  // ---- TD-PIM (INTERNOS) ----
+  const searchDepSeg = $("sSearchDepSeg") ? $("sSearchDepSeg").value.toLowerCase() : "";
+  const filterDepSeg = $("sFilterDepSeg") ? $("sFilterDepSeg").value : "";
+  const searchOfiSeg = $("sSearchOfiSeg") ? $("sSearchOfiSeg").value.toLowerCase() : "";
+  const filterOfiSeg = $("sFilterOfiSeg") ? $("sFilterOfiSeg").value : "";
+
+  const filasSeg = filasFiltradas.filter(f => {
+    if (filterDepSeg && f.dep !== filterDepSeg) return false;
+    if (searchDepSeg && !f.dep.toLowerCase().includes(searchDepSeg)) return false;
+    if (filterOfiSeg && f.ofi !== filterOfiSeg) return false;
+    if (searchOfiSeg && !f.ofi.toLowerCase().includes(searchOfiSeg)) return false;
+    return true;
+  });
+
   const depMap = {};
-  filas.forEach(f => {
+  filasSeg.forEach(f => {
     if (!depMap[f.dep]) depMap[f.dep] = { pim: 0, cert: 0, compAnual: 0, comp: 0, dev: 0, saldoCert: 0, progOct: 0, devOct: 0, difOct: 0, progNov: 0, progDic: 0, difAnual: 0, ofis: {} };
     const d = depMap[f.dep];
     d.pim += f.pim; d.cert += f.cert; d.compAnual += f.compAnual; d.comp += f.comp; d.dev += f.dev;
@@ -443,7 +522,6 @@ function renderSeguimiento() {
     g.progNov += f.progNov; g.progDic += f.progDic; g.difAnual += f.difAnual;
   });
 
-  // Gráficos
   const topDeps = Object.entries(depMap).sort((a,b)=>b[1].pim - a[1].pim).slice(0, 8);
   renderGrouped("sBarras", topDeps.map(d=>d[0]), [
     { label: "PIM", color: C.goldDark, data: topDeps.map(d=>d[1].pim) },
@@ -451,11 +529,10 @@ function renderSeguimiento() {
   ]);
 
   let saldos = {};
-  filas.forEach(f => { saldos[f.dep] = (saldos[f.dep] || 0) + f.saldoCert; });
+  filasSeg.forEach(f => { saldos[f.dep] = (saldos[f.dep] || 0) + f.saldoCert; });
   const topSaldos = Object.entries(saldos).sort((a,b)=>b[1]-a[1]).slice(0,6);
   renderDoughnut("sDona", topSaldos.map(s=>s[0]), topSaldos.map(s=>s[1]), fmtM(tPim - tCert), "Saldo Cert.");
 
-  // Tabla HTML (Acordeón)
   const cRow = (label, data, isSub=false, hasChild=false, levelId="") => {
     const p = (v) => data.pim ? fmt((v / data.pim)*100, 1) + "%" : "-";
     return `
@@ -492,20 +569,27 @@ function renderSeguimiento() {
     <th class="num">Prog Nov</th><th class="num">Prog Dic</th><th class="num">Dif. Anual 2026</th>
   </tr></thead><tbody>`;
 
+  let tPimSeg = 0, tCertSeg = 0, tCompAnualSeg = 0, tCompSeg = 0, tDevSeg = 0, tSaldoCertSeg = 0, tProgOctSeg = 0, tDevOctSeg = 0, tDifOctSeg = 0, tProgNovSeg = 0, tProgDicSeg = 0, tDifAnualSeg = 0;
+
   Object.keys(depMap).sort().forEach((depName, iDep) => {
-    html += cRow(depName, depMap[depName], false, true, `dep-${iDep}`);
+    const d = depMap[depName];
+    tPimSeg += d.pim; tCertSeg += d.cert; tCompAnualSeg += d.compAnual; tCompSeg += d.comp; tDevSeg += d.dev;
+    tSaldoCertSeg += d.saldoCert; tProgOctSeg += d.progOct; tDevOctSeg += d.devOct; tDifOctSeg += d.difOct;
+    tProgNovSeg += d.progNov; tProgDicSeg += d.progDic; tDifAnualSeg += d.difAnual;
+
+    html += cRow(depName, d, false, true, `dep-${iDep}`);
     
-    Object.keys(depMap[depName].ofis).sort().forEach((ofiName, iOfi) => {
+    Object.keys(d.ofis).sort().forEach((ofiName, iOfi) => {
       html += `<tr class="child dep-${iDep}" style="display:none; background:#F8FAFC;"><td colspan="18" style="padding:0;"><table style="width:100%"><tbody>`;
-      html += cRow(ofiName, depMap[depName].ofis[ofiName], true, true, `ofi-${iDep}-${iOfi}`);
+      html += cRow(ofiName, d.ofis[ofiName], true, true, `ofi-${iDep}-${iOfi}`);
 
-      Object.keys(depMap[depName].ofis[ofiName].metas).sort().forEach((metaName, iMeta) => {
+      Object.keys(d.ofis[ofiName].metas).sort().forEach((metaName, iMeta) => {
         html += `<tr class="child ofi-${iDep}-${iOfi}" style="display:none;"><td colspan="18" style="padding:0;"><table style="width:100%"><tbody>`;
-        html += cRow(`${metaName} - ${ofiName}`, depMap[depName].ofis[ofiName].metas[metaName], true, true, `meta-${iDep}-${iOfi}-${iMeta}`);
+        html += cRow(`${metaName} - ${ofiName}`, d.ofis[ofiName].metas[metaName], true, true, `meta-${iDep}-${iOfi}-${iMeta}`);
 
-        Object.keys(depMap[depName].ofis[ofiName].metas[metaName].gens).sort().forEach((genName) => {
+        Object.keys(d.ofis[ofiName].metas[metaName].gens).sort().forEach((genName) => {
           html += `<tr class="child meta-${iDep}-${iOfi}-${iMeta}" style="display:none;"><td colspan="18" style="padding:0;"><table style="width:100%"><tbody>`;
-          html += cRow(genName || "SIN GEN", depMap[depName].ofis[ofiName].metas[metaName].gens[genName], true, false, "");
+          html += cRow(genName || "SIN GEN", d.ofis[ofiName].metas[metaName].gens[genName], true, false, "");
           html += `</tbody></table></td></tr>`;
         });
         html += `</tbody></table></td></tr>`;
@@ -513,6 +597,35 @@ function renderSeguimiento() {
       html += `</tbody></table></td></tr>`;
     });
   });
+
+  const pTotalCertSeg = tPimSeg ? fmt((tCertSeg / tPimSeg)*100, 1) + "%" : "-";
+  const pTotalCompAnualSeg = tPimSeg ? fmt((tCompAnualSeg / tPimSeg)*100, 1) + "%" : "-";
+  const pTotalCompSeg = tPimSeg ? fmt((tCompSeg / tPimSeg)*100, 1) + "%" : "-";
+  const pTotalDevSeg = tPimSeg ? fmt((tDevSeg / tPimSeg)*100, 1) + "%" : "-";
+  const pTotalDevOctSeg = tPimSeg ? fmt((tDevOctSeg / tPimSeg)*100, 1) + "%" : "-";
+
+  html += `
+    <tr style="font-weight:700; background:#F1F5F9; border-top:2px solid #CBD5E1;">
+      <td>Total general</td>
+      <td class="num">${fmt(tPimSeg, 2)}</td>
+      <td class="num">${fmt(tCertSeg, 2)}</td>
+      <td class="num">${pTotalCertSeg}</td>
+      <td class="num">${fmt(tCompAnualSeg, 2)}</td>
+      <td class="num">${pTotalCompAnualSeg}</td>
+      <td class="num">${fmt(tCompSeg, 2)}</td>
+      <td class="num">${pTotalCompSeg}</td>
+      <td class="num">${fmt(tDevSeg, 2)}</td>
+      <td class="num">${pTotalDevSeg}</td>
+      <td class="num">${fmt(tSaldoCertSeg, 2)}</td>
+      <td class="num">${fmt(tProgOctSeg, 2)}</td>
+      <td class="num">${fmt(tDevOctSeg, 2)}</td>
+      <td class="num">${pTotalDevOctSeg}</td>
+      <td class="num">${fmt(tDifOctSeg, 2)}</td>
+      <td class="num">${fmt(tProgNovSeg, 2)}</td>
+      <td class="num">${fmt(tProgDicSeg, 2)}</td>
+      <td class="num">${fmt(tDifAnualSeg, 2)}</td>
+    </tr>
+  `;
   html += `</tbody></table></div>`;
   $("sTabla").innerHTML = html;
 
@@ -550,27 +663,36 @@ function engancharEventos() {
     tab.addEventListener("click", (e) => { e.preventDefault(); cambiarSeccion(tab.dataset.seccion); });
   });
 
-  // Filtros Seguimiento
+  // Filtros Seguimiento (superiores)
   ["sDep", "sOfi", "sGen", "sEsp", "sMeta"].forEach(id => {
     const el = $(id); if (el) el.addEventListener("change", () => renderSeguimiento());
   });
-  
   const btnClearSeg = $("sClear");
   if (btnClearSeg) btnClearSeg.addEventListener("click", () => {
     ["sDep", "sOfi", "sGen", "sEsp", "sMeta"].forEach(id => { const el = $(id); if (el) el.value = ""; });
     renderSeguimiento();
   });
 
-  // Filtros Evolución
+  // Filtros Evolución (superiores)
   ["eDep", "eOfi", "eGen", "eEsp", "eMeta"].forEach(id => {
     const el = $(id); if (el) el.addEventListener("change", () => renderEvolucion());
   });
-  
   const btnClearEvo = $("eClear");
   if (btnClearEvo) btnClearEvo.addEventListener("click", () => {
     ["eDep", "eOfi", "eGen", "eEsp", "eMeta"].forEach(id => { const el = $(id); if (el) el.value = ""; });
     renderEvolucion();
   });
+
+  // Eventos buscadores/selectores internos de las tablas
+  if ($("eSearchDepEje")) $("eSearchDepEje").addEventListener("input", renderEvolucion);
+  if ($("eFilterDepEje")) $("eFilterDepEje").addEventListener("change", renderEvolucion);
+  if ($("eSearchOfiEje")) $("eSearchOfiEje").addEventListener("input", renderEvolucion);
+  if ($("eFilterOfiEje")) $("eFilterOfiEje").addEventListener("change", renderEvolucion);
+
+  if ($("sSearchDepSeg")) $("sSearchDepSeg").addEventListener("input", renderSeguimiento);
+  if ($("sFilterDepSeg")) $("sFilterDepSeg").addEventListener("change", renderSeguimiento);
+  if ($("sSearchOfiSeg")) $("sSearchOfiSeg").addEventListener("input", renderSeguimiento);
+  if ($("sFilterOfiSeg")) $("sFilterOfiSeg").addEventListener("change", renderSeguimiento);
 
   document.querySelectorAll(".js-refresh").forEach((b) =>
     b.addEventListener("click", async () => {
