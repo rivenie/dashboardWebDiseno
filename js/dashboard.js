@@ -405,14 +405,14 @@ function renderSeguimiento() {
   let tPim = 0, tCert = 0, tDev = 0, tProg = 0;
   filas.forEach(f => {
     tPim += f.pim; tCert += f.cert; tDev += f.dev;
-    tProg += (f.progNov + f.progDic); 
+    tProg += f.progOct; // <-- Ahora toma la proyección de Octubre
   });
 
   $("kpiSeguimiento").innerHTML = [
     heroCard({ title: "PIM (Filtrado)", value: "S/ " + fmt(tPim), unit: "", note: `Programación Nov-Dic: ${fmtM(tProg)}`, badge: `Saldo Total: ${fmtM(tPim - tDev)}` }),
     kpiCard({ icon: "fa-file-signature", tone: "gold", title: "% Certificado", value: fmt(tPim ? (tCert/tPim)*100 : 0, 2) + "%", unit: "", pct: tPim ? (tCert/tPim)*100 : 0, barLabel: "Cert / PIM", foot: fmtM(tCert) }),
     kpiCard({ icon: "fa-coins", tone: "amber", title: "% Devengado", value: fmt(tPim ? (tDev/tPim)*100 : 0, 2) + "%", unit: "", pct: tPim ? (tDev/tPim)*100 : 0, barLabel: "Dev / PIM", foot: fmtM(tDev) }),
-    kpiCard({ icon: "fa-calendar-check", tone: "green", title: "Programación", value: fmtM(tProg), unit: "", pct: tPim ? (tProg/tPim)*100 : 0, barLabel: "Prog Nov-Dic", foot: "Proyección" }),
+    kpiCard({ icon: "fa-calendar-check", tone: "green", title: "Programación", value: fmtM(tProg), unit: "", pct: tPim ? (tProg/tPim)*100 : 0, barLabel: "Prog Oct", foot: "Proyección" }),
   ].join("");
 
   // Agrupación de Datos
