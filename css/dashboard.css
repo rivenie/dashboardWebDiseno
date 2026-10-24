@@ -146,27 +146,56 @@ button { font-family: inherit; color: inherit; }
 .legend-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .legend-item b { margin-left: auto; color: var(--text); font-weight: 600; padding-left: 6px; }
 
+/* =========================================
+   TABLAS (Para usar con el JS original de tablas anidadas)
+   ========================================= */
 .tbl-wrap { 
-    overflow-x: auto; 
+    overflow-x: auto; /* Activa la barra horizontal */
     overflow-y: auto; 
     max-height: 520px; 
-    width: 100%; /* El contenedor sí ocupa el 100% del ancho de la pantalla */
+    width: 100%; 
 }
+
+/* La tabla principal */
 .tbl { 
     border-collapse: collapse; 
-    min-width: 100%; /* O puedes borrar esta línea por completo */
+    width: 100%; 
+    min-width: 1200px; /* Fuerza el ancho para que la barra horizontal aparezca */
 }
+
+/* Celdas de la tabla principal */
 .tbl th { text-align: left; font-size: 0.66rem; font-weight: 600; color: var(--faint); text-transform: uppercase; letter-spacing: 0.1em; padding: 10px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; background: var(--card-2); position: sticky; top: 0; z-index: 2; }
-.tbl td { padding: 11px 12px; border-bottom: 1px solid var(--line-soft); font-size: 0.84rem; color: var(--text); white-space: normal; /* Permite saltos de línea */
-  word-break: break-word; /* Rompe palabras larguísimas si es necesario */}
-  /* Fija el ancho para la columna 1 (Oficina) y la 3 (ESP GASTO) */
-/* Anchos específicos para la tabla de Compromisos */
-.tabla-comp .tbl th:nth-child(2), .tabla-comp .tbl td:nth-child(2) { max-width: 220px; min-width: 180px; }
-.tabla-comp .tbl th:nth-child(3), .tabla-comp .tbl td:nth-child(3) { max-width: 220px; min-width: 180px; }
+.tbl td { padding: 11px 12px; border-bottom: 1px solid var(--line-soft); font-size: 0.84rem; color: var(--text); white-space: normal; word-break: break-word; }
+
+/* REGLAS CLAVE PARA LAS SUB-TABLAS (Acordeón) */
+.tbl td table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0;
+    padding: 0;
+    border: none;
+    table-layout: fixed; /* Mantiene las columnas alineadas */
+}
+.tbl td table td {
+    border-bottom: 1px solid #EEF2F6 !important;
+    padding: 11px 12px;
+    background: transparent;
+    white-space: nowrap; /* Evita que los montos se bajen */
+}
+.tbl td table th {
+    display: none; /* Oculta las cabeceras de las sub-tablas */
+}
+
 .tbl tr:last-child td { border-bottom: 0; }
 .tbl tbody tr:hover td { background: rgba(15, 118, 110, 0.05); }
 .tbl .num { text-align: right; } .tbl th.num { text-align: right; }
 .tbl td.name { font-weight: 600; color: var(--gold-dark); }
+
+/* Scroll horizontal para tablas anchas (Evolución) */
+.tbl-wrap { overflow-x: auto; }
+.tbl th, .tbl td { white-space: nowrap; }
+.tbl td:first-child { white-space: normal; min-width: 280px; }
+.tbl td table td:first-child { width: 30%; } /* Resetea para las internas */
 
 @media (max-width: 1280px) {
     .span-3, .span-4 { grid-column: span 6; }
@@ -196,12 +225,3 @@ button { font-family: inherit; color: inherit; }
 @media (prefers-reduced-motion: reduce) {
     .live i, .loading-spinner, .is-loading i { animation: none; }
 }
-
-.tbl th, .tbl td {
-    white-space: nowrap;
-    padding: 10px 14px;
-}
-
-.tbl tr.row-parent:hover { background-color: #F1F5F9; }
-.tbl td table { margin: 0; padding: 0; border: none; }
-.tbl td table td { border-bottom: 1px solid #EEF2F6 !important; padding: 8px 12px; }

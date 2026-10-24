@@ -172,10 +172,13 @@ function construirLayoutInterno() {
     donutCard("eGasto", "Devengado por Tipo de Gasto", "Distribución", 4),
     slotCard("eTabla", "Resumen Mensual", "Mes · Devengado", 12),
     
-    `<article class="card span-12">
-      <div class="card-head" style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
-        <div><h3>TD-PIM-EJE (Evolución por Dependencia)</h3><p>Haz clic en los signos (+) para desplegar.</p></div>
-        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            `<article class="card span-12">
+      <div class="card-head" style="display:flex; flex-direction: column; align-items: flex-start; gap: 12px; margin-bottom:14px;">
+        <div>
+          <h3>TD-PIM-EJE (Evolución por Dependencia)</h3>
+          <p>Haz clic en los signos (+) para desplegar.</p>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; width: 100%;">
           <select id="eFilterDepEje" style="min-width:180px; border:1px solid #E2E8F0; padding:6px 10px; border-radius:6px; font-size:12px; color:#1E293B; outline:none;"><option value="">Todas las Deps</option></select>
           <input type="text" id="eSearchDepEje" placeholder="Buscar Dep..." style="width:130px; border:1px solid #E2E8F0; padding:6px 10px; border-radius:6px; font-size:12px; color:#1E293B; outline:none;">
           
@@ -208,10 +211,13 @@ function construirLayoutInterno() {
     plotCard("sBarras", "Avance por Dependencia", "PIM vs Devengado", 8, "tall"),
     donutCard("sDona", "Distribución del Saldo", "PIM - Certificado", 4),
     
-    `<article class="card span-12">
-      <div class="card-head" style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
-        <div><h3>Seguimiento Detallado (TD-PIM)</h3><p>Haz clic en los signos (+) para desplegar.</p></div>
-        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        `<article class="card span-12">
+      <div class="card-head" style="display:flex; flex-direction: column; align-items: flex-start; gap: 12px; margin-bottom:14px;">
+        <div>
+          <h3>Seguimiento Detallado (TD-PIM)</h3>
+          <p>Haz clic en los signos (+) para desplegar.</p>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; width: 100%;">
           <select id="sFilterDepSeg" style="min-width:180px; border:1px solid #E2E8F0; padding:6px 10px; border-radius:6px; font-size:12px; color:#1E293B; outline:none;"><option value="">Todas las Deps</option></select>
           <input type="text" id="sSearchDepSeg" placeholder="Buscar Dep..." style="width:130px; border:1px solid #E2E8F0; padding:6px 10px; border-radius:6px; font-size:12px; color:#1E293B; outline:none;">
           
@@ -317,7 +323,7 @@ function renderEvolucion() {
     filasTabla
   );
 
-  // ---- TD-PIM-EJE (INTERNOS) ----
+  // ---- LÓGICA TD-PIM-EJE (TABLA PLANA IGUAL QUE SEGUIMIENTO) ----
   const searchDepEje = $("eSearchDepEje") ? $("eSearchDepEje").value.toLowerCase() : "";
   const filterDepEje = $("eFilterDepEje") ? $("eFilterDepEje").value : "";
   const searchOfiEje = $("eSearchOfiEje") ? $("eSearchOfiEje").value.toLowerCase() : "";
@@ -355,11 +361,14 @@ function renderEvolucion() {
   });
 
   const MESES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Set", "Oct"];
-  const cRowEje = (label, data, isSub=false, hasChild=false, levelId="") => {
+  
+  const cRowEje = (label, data, nivel=0, hasChild=false, rowId="", parentId="") => {
     const p = (v) => data.pim ? fmt((v / data.pim)*100, 1) + "%" : "-";
+    const paddingLeft = nivel === 0 ? "10px" : `${nivel * 20 + 10}px`;
+    
     return `
-      <tr class="${hasChild ? 'row-parent' : ''}" ${hasChild ? `data-target="${levelId}"` : ''} style="${hasChild ? 'cursor:pointer; font-weight:600;' : 'color:#64748B;'}">
-        <td style="padding-left: ${isSub ? '15px' : '0'};">
+      <tr class="${hasChild ? 'row-parent' : ''} ${parentId ? 'child' : ''}" ${hasChild ? `data-row-id="${rowId}"` : ''} ${parentId ? `data-parent="${parentId}"` : ''} style="${hasChild ? 'cursor:pointer; font-weight:600; background:#F8FAFC;' : 'color:#64748B;'}">
+        <td style="padding-left: ${paddingLeft}; white-space: normal; word-break: break-word; max-width: 250px;">
           ${hasChild ? '<i class="fas fa-plus-square" style="color:#0F172A; width:15px; margin-right:5px;"></i>' : '<i style="width:15px; margin-right:5px; display:inline-block;"></i>'}
           ${label}
         </td>
@@ -390,24 +399,21 @@ function renderEvolucion() {
     tPimEje += d.pim; tCertEje += d.cert; tCompAnualEje += d.compAnual; tCompEje += d.comp; tDevEje += d.dev;
     if (d.meses) d.meses.forEach((v, i) => { tMeses[i] += v; });
 
-    html += cRowEje(depName, d, false, true, `eje-dep-${iDep}`);
+    const depId = `eje-dep-${iDep}`;
+    html += cRowEje(depName, d, 0, true, depId, "");
     
     Object.keys(d.ofis).sort().forEach((ofiName, iOfi) => {
-      html += `<tr class="child eje-dep-${iDep}" style="display:none; background:#F8FAFC;"><td colspan="19" style="padding:0;"><table style="width:100%"><tbody>`;
-      html += cRowEje(ofiName, d.ofis[ofiName], true, true, `eje-ofi-${iDep}-${iOfi}`);
+      const ofiId = `eje-ofi-${iDep}-${iOfi}`;
+      html += cRowEje(ofiName, d.ofis[ofiName], 1, true, ofiId, depId);
 
       Object.keys(d.ofis[ofiName].metas).sort().forEach((metaName, iMeta) => {
-        html += `<tr class="child eje-ofi-${iDep}-${iOfi}" style="display:none;"><td colspan="19" style="padding:0;"><table style="width:100%"><tbody>`;
-        html += cRowEje(`${metaName} - ${ofiName}`, d.ofis[ofiName].metas[metaName], true, true, `eje-meta-${iDep}-${iOfi}-${iMeta}`);
+        const metaId = `eje-meta-${iDep}-${iOfi}-${iMeta}`;
+        html += cRowEje(`${metaName} - ${ofiName}`, d.ofis[ofiName].metas[metaName], 2, true, metaId, ofiId);
 
         Object.keys(d.ofis[ofiName].metas[metaName].gens).sort().forEach((genName) => {
-          html += `<tr class="child eje-meta-${iDep}-${iOfi}-${iMeta}" style="display:none;"><td colspan="19" style="padding:0;"><table style="width:100%"><tbody>`;
-          html += cRowEje(genName || "SIN GEN", d.ofis[ofiName].metas[metaName].gens[genName], true, false, "");
-          html += `</tbody></table></td></tr>`;
+          html += cRowEje(genName || "SIN GEN", d.ofis[ofiName].metas[metaName].gens[genName], 3, false, "", metaId);
         });
-        html += `</tbody></table></td></tr>`;
       });
-      html += `</tbody></table></td></tr>`;
     });
   });
 
@@ -417,7 +423,7 @@ function renderEvolucion() {
   
   html += `
     <tr style="font-weight:700; background:#F1F5F9; border-top:2px solid #CBD5E1;">
-      <td>Total general</td>
+      <td style="padding-left: 10px;">Total general</td>
       <td class="num">${fmt(tPimEje, 2)}</td>
       <td class="num">${fmt(tCertEje, 2)}</td>
       <td class="num">${fmt(tCompAnualEje, 2)}</td>
@@ -433,14 +439,31 @@ function renderEvolucion() {
   
   if ($("eTablaEje")) {
     $("eTablaEje").innerHTML = html;
+
+    // Ocultar todos los hijos al inicio
+    document.querySelectorAll('#eTablaEje tr[data-parent]').forEach(row => {
+      row.style.display = 'none';
+    });
+
+    // Lógica para el acordeón
     document.querySelectorAll('#eTablaEje .row-parent').forEach(row => {
       row.addEventListener('click', () => {
-        const target = row.dataset.target;
-        const children = document.querySelectorAll(`#eTablaEje .child.${target}`);
+        const rowId = row.dataset.rowId;
+        const children = document.querySelectorAll(`#eTablaEje tr[data-parent="${rowId}"]`);
         const icon = row.querySelector('i');
-        const isHidden = children[0] && children[0].style.display === 'none';
+        const isHidden = children.length > 0 && children[0].style.display === 'none';
         
-        children.forEach(c => c.style.display = isHidden ? 'table-row' : 'none');
+        children.forEach(c => {
+          c.style.display = isHidden ? 'table-row' : 'none';
+          // Si estamos cerrando el padre, también ocultamos a sus hijos internos
+          if (!isHidden) {
+            const cRowId = c.dataset.rowId;
+            if (cRowId) {
+              document.querySelectorAll(`#eTablaEje tr[data-parent="${cRowId}"]`).forEach(gc => { gc.style.display = 'none'; });
+            }
+          }
+        });
+        
         if (icon) {
           icon.classList.toggle('fa-plus-square', !isHidden);
           icon.classList.toggle('fa-minus-square', isHidden);
@@ -481,7 +504,6 @@ function renderSeguimiento() {
     kpiCard({ icon: "fa-calendar-check", tone: "green", title: "Programación", value: fmtM(tProg), unit: "", pct: tPim ? (tProg/tPim)*100 : 0, barLabel: "Prog Oct", foot: "Proyección" }),
   ].join("");
 
-  // ---- TD-PIM (INTERNOS) ----
   const searchDepSeg = $("sSearchDepSeg") ? $("sSearchDepSeg").value.toLowerCase() : "";
   const filterDepSeg = $("sFilterDepSeg") ? $("sFilterDepSeg").value : "";
   const searchOfiSeg = $("sSearchOfiSeg") ? $("sSearchOfiSeg").value.toLowerCase() : "";
@@ -533,24 +555,16 @@ function renderSeguimiento() {
   const topSaldos = Object.entries(saldos).sort((a,b)=>b[1]-a[1]).slice(0,6);
   renderDoughnut("sDona", topSaldos.map(s=>s[0]), topSaldos.map(s=>s[1]), fmtM(tPim - tCert), "Saldo Cert.");
 
-  const cRow = (label, data, isSub=false, hasChild=false, levelId="") => {
+  const cRow = (label, data, nivel=0, hasChild=false, rowId="", parentId="") => {
     const p = (v) => data.pim ? fmt((v / data.pim)*100, 1) + "%" : "-";
+    const paddingLeft = nivel === 0 ? "10px" : `${nivel * 20 + 10}px`;
+    
     return `
-      <tr class="${hasChild ? 'row-parent' : ''}" ${hasChild ? `data-target="${levelId}"` : ''} style="${hasChild ? 'cursor:pointer; font-weight:600;' : 'color:#64748B;'}">
-        <td style="padding-left: ${isSub ? '15px' : '0'};">
+      <tr class="${hasChild ? 'row-parent' : ''} ${parentId ? 'child' : ''}" ${hasChild ? `data-row-id="${rowId}"` : ''} ${parentId ? `data-parent="${parentId}"` : ''} style="${hasChild ? 'cursor:pointer; font-weight:600; background:#F8FAFC;' : 'color:#64748B;'}">
+        <td style="padding-left: ${paddingLeft}; white-space: normal; word-break: break-word; max-width: 250px;">
           ${hasChild ? '<i class="fas fa-plus-square" style="color:#0F172A; width:15px; margin-right:5px;"></i>' : '<i style="width:15px; margin-right:5px; display:inline-block;"></i>'}
           ${label}
         </td>
-        <td class="num">${fmt(data.pim, 2)}</td>
-        <td class="num">${fmt(data.cert, 2)}</td>
-        <td class="num">${p(data.cert)}</td>
-        <td class="num">${fmt(data.compAnual, 2)}</td>
-        <td class="num">${p(data.compAnual)}</td>
-        <td class="num">${fmt(data.comp, 2)}</td>
-        <td class="num">${p(data.comp)}</td>
-        <td class="num">${fmt(data.dev, 2)}</td>
-        <td class="num">${p(data.dev)}</td>
-        <td class="num">${fmt(data.saldoCert, 2)}</td>
         <td class="num">${fmt(data.progOct, 2)}</td>
         <td class="num">${fmt(data.devOct, 2)}</td>
         <td class="num">${p(data.devOct)}</td>
@@ -562,61 +576,47 @@ function renderSeguimiento() {
   };
 
   let html = `<div class="tbl-wrap"><table class="tbl"><thead><tr>
-    <th>Dependencia / Oficina</th><th class="num">PIM</th><th class="num">Certificado</th><th class="num">% Cert</th>
-    <th class="num">Comp. Anual</th><th class="num">% CA</th><th class="num">Compromiso</th><th class="num">% Comp</th>
-    <th class="num">Devengado</th><th class="num">% Dev</th><th class="num">Saldo PIM-Cert</th>
-    <th class="num">Prog. Gastos</th><th class="num">Dev 19 Oct</th><th class="num">% Eje Oct</th><th class="num">Diferencia</th>
-    <th class="num">Prog Nov</th><th class="num">Prog Dic</th><th class="num">Dif. Anual 2026</th>
+    <th style="width: 35%;">Dependencia / Oficina</th>
+    <th class="num" style="width: 10%;">Prog. Gastos</th>
+    <th class="num" style="width: 10%;">Dev 19 Oct</th>
+    <th class="num" style="width: 10%;">% Eje Oct</th>
+    <th class="num" style="width: 10%;">Diferencia</th>
+    <th class="num" style="width: 8%;">Prog Nov</th>
+    <th class="num" style="width: 8%;">Prog Dic</th>
+    <th class="num" style="width: 9%;">Dif. Anual 2026</th>
   </tr></thead><tbody>`;
 
-  let tPimSeg = 0, tCertSeg = 0, tCompAnualSeg = 0, tCompSeg = 0, tDevSeg = 0, tSaldoCertSeg = 0, tProgOctSeg = 0, tDevOctSeg = 0, tDifOctSeg = 0, tProgNovSeg = 0, tProgDicSeg = 0, tDifAnualSeg = 0;
+  let tProgOctSeg = 0, tDevOctSeg = 0, tDifOctSeg = 0, tProgNovSeg = 0, tProgDicSeg = 0, tDifAnualSeg = 0, tPimSeg = 0;
 
   Object.keys(depMap).sort().forEach((depName, iDep) => {
     const d = depMap[depName];
-    tPimSeg += d.pim; tCertSeg += d.cert; tCompAnualSeg += d.compAnual; tCompSeg += d.comp; tDevSeg += d.dev;
-    tSaldoCertSeg += d.saldoCert; tProgOctSeg += d.progOct; tDevOctSeg += d.devOct; tDifOctSeg += d.difOct;
+    tPimSeg += d.pim;
+    tProgOctSeg += d.progOct; tDevOctSeg += d.devOct; tDifOctSeg += d.difOct;
     tProgNovSeg += d.progNov; tProgDicSeg += d.progDic; tDifAnualSeg += d.difAnual;
 
-    html += cRow(depName, d, false, true, `dep-${iDep}`);
+    const depId = `dep-${iDep}`;
+    html += cRow(depName, d, 0, true, depId, "");
     
     Object.keys(d.ofis).sort().forEach((ofiName, iOfi) => {
-      html += `<tr class="child dep-${iDep}" style="display:none; background:#F8FAFC;"><td colspan="18" style="padding:0;"><table style="width:100%"><tbody>`;
-      html += cRow(ofiName, d.ofis[ofiName], true, true, `ofi-${iDep}-${iOfi}`);
+      const ofiId = `ofi-${iDep}-${iOfi}`;
+      html += cRow(ofiName, d.ofis[ofiName], 1, true, ofiId, depId);
 
       Object.keys(d.ofis[ofiName].metas).sort().forEach((metaName, iMeta) => {
-        html += `<tr class="child ofi-${iDep}-${iOfi}" style="display:none;"><td colspan="18" style="padding:0;"><table style="width:100%"><tbody>`;
-        html += cRow(`${metaName} - ${ofiName}`, d.ofis[ofiName].metas[metaName], true, true, `meta-${iDep}-${iOfi}-${iMeta}`);
+        const metaId = `meta-${iDep}-${iOfi}-${iMeta}`;
+        html += cRow(`${metaName} - ${ofiName}`, d.ofis[ofiName].metas[metaName], 2, true, metaId, ofiId);
 
         Object.keys(d.ofis[ofiName].metas[metaName].gens).sort().forEach((genName) => {
-          html += `<tr class="child meta-${iDep}-${iOfi}-${iMeta}" style="display:none;"><td colspan="18" style="padding:0;"><table style="width:100%"><tbody>`;
-          html += cRow(genName || "SIN GEN", d.ofis[ofiName].metas[metaName].gens[genName], true, false, "");
-          html += `</tbody></table></td></tr>`;
+          html += cRow(genName || "SIN GEN", d.ofis[ofiName].metas[metaName].gens[genName], 3, false, "", metaId);
         });
-        html += `</tbody></table></td></tr>`;
       });
-      html += `</tbody></table></td></tr>`;
     });
   });
 
-  const pTotalCertSeg = tPimSeg ? fmt((tCertSeg / tPimSeg)*100, 1) + "%" : "-";
-  const pTotalCompAnualSeg = tPimSeg ? fmt((tCompAnualSeg / tPimSeg)*100, 1) + "%" : "-";
-  const pTotalCompSeg = tPimSeg ? fmt((tCompSeg / tPimSeg)*100, 1) + "%" : "-";
-  const pTotalDevSeg = tPimSeg ? fmt((tDevSeg / tPimSeg)*100, 1) + "%" : "-";
   const pTotalDevOctSeg = tPimSeg ? fmt((tDevOctSeg / tPimSeg)*100, 1) + "%" : "-";
 
   html += `
     <tr style="font-weight:700; background:#F1F5F9; border-top:2px solid #CBD5E1;">
-      <td>Total general</td>
-      <td class="num">${fmt(tPimSeg, 2)}</td>
-      <td class="num">${fmt(tCertSeg, 2)}</td>
-      <td class="num">${pTotalCertSeg}</td>
-      <td class="num">${fmt(tCompAnualSeg, 2)}</td>
-      <td class="num">${pTotalCompAnualSeg}</td>
-      <td class="num">${fmt(tCompSeg, 2)}</td>
-      <td class="num">${pTotalCompSeg}</td>
-      <td class="num">${fmt(tDevSeg, 2)}</td>
-      <td class="num">${pTotalDevSeg}</td>
-      <td class="num">${fmt(tSaldoCertSeg, 2)}</td>
+      <td style="padding-left: 10px;">Total general</td>
       <td class="num">${fmt(tProgOctSeg, 2)}</td>
       <td class="num">${fmt(tDevOctSeg, 2)}</td>
       <td class="num">${pTotalDevOctSeg}</td>
@@ -629,14 +629,30 @@ function renderSeguimiento() {
   html += `</tbody></table></div>`;
   $("sTabla").innerHTML = html;
 
+  // Ocultar todos los hijos al inicio
+  document.querySelectorAll('#sTabla tr[data-parent]').forEach(row => {
+    row.style.display = 'none';
+  });
+
+  // Lógica para el acordeón
   document.querySelectorAll('#sTabla .row-parent').forEach(row => {
     row.addEventListener('click', () => {
-      const target = row.dataset.target;
-      const children = document.querySelectorAll(`#sTabla .child.${target}`);
+      const rowId = row.dataset.rowId;
+      const children = document.querySelectorAll(`#sTabla tr[data-parent="${rowId}"]`);
       const icon = row.querySelector('i');
-      const isHidden = children[0] && children[0].style.display === 'none';
+      const isHidden = children.length > 0 && children[0].style.display === 'none';
       
-      children.forEach(c => c.style.display = isHidden ? 'table-row' : 'none');
+      children.forEach(c => {
+        c.style.display = isHidden ? 'table-row' : 'none';
+        // Si estamos cerrando el padre, también ocultamos a sus hijos internos
+        if (!isHidden) {
+          const cRowId = c.dataset.rowId;
+          if (cRowId) {
+            document.querySelectorAll(`#sTabla tr[data-parent="${cRowId}"]`).forEach(gc => { gc.style.display = 'none'; });
+          }
+        }
+      });
+      
       if (icon) {
         icon.classList.toggle('fa-plus-square', !isHidden);
         icon.classList.toggle('fa-minus-square', isHidden);
@@ -663,36 +679,59 @@ function engancharEventos() {
     tab.addEventListener("click", (e) => { e.preventDefault(); cambiarSeccion(tab.dataset.seccion); });
   });
 
-  // Filtros Seguimiento (superiores)
-  ["sDep", "sOfi", "sGen", "sEsp", "sMeta"].forEach(id => {
+  const actualizarOfis = (depId, ofiId) => {
+    const depVal = $(depId) ? $(depId).value : "";
+    const selOfi = $(ofiId);
+    if (!selOfi) return;
+    
+    const ofisSet = new Set();
+    state.data.filas.forEach(f => {
+      if (!depVal || f.dep === depVal) {
+        if (f.ofi) ofisSet.add(f.ofi);
+      }
+    });
+    
+    const currentVal = selOfi.value;
+    selOfi.innerHTML = `<option value="">Todas las Ofis</option>`;
+    [...ofisSet].sort().forEach(v => { 
+      const o = document.createElement("option"); o.value = v; o.textContent = v; selOfi.appendChild(o); 
+    });
+    
+    if ([...ofisSet].includes(currentVal)) selOfi.value = currentVal;
+  };
+
+  if ($("sDep")) $("sDep").addEventListener("change", () => { actualizarOfis("sDep", "sOfi"); renderSeguimiento(); });
+  ["sOfi", "sGen", "sEsp", "sMeta"].forEach(id => {
     const el = $(id); if (el) el.addEventListener("change", () => renderSeguimiento());
   });
+  
   const btnClearSeg = $("sClear");
   if (btnClearSeg) btnClearSeg.addEventListener("click", () => {
     ["sDep", "sOfi", "sGen", "sEsp", "sMeta"].forEach(id => { const el = $(id); if (el) el.value = ""; });
+    actualizarOfis("sDep", "sOfi");
     renderSeguimiento();
   });
 
-  // Filtros Evolución (superiores)
-  ["eDep", "eOfi", "eGen", "eEsp", "eMeta"].forEach(id => {
+  if ($("eDep")) $("eDep").addEventListener("change", () => { actualizarOfis("eDep", "eOfi"); renderEvolucion(); });
+  ["eOfi", "eGen", "eEsp", "eMeta"].forEach(id => {
     const el = $(id); if (el) el.addEventListener("change", () => renderEvolucion());
   });
   const btnClearEvo = $("eClear");
   if (btnClearEvo) btnClearEvo.addEventListener("click", () => {
     ["eDep", "eOfi", "eGen", "eEsp", "eMeta"].forEach(id => { const el = $(id); if (el) el.value = ""; });
+    actualizarOfis("eDep", "eOfi");
     renderEvolucion();
   });
 
-  // Eventos buscadores/selectores internos de las tablas
+  if ($("eFilterDepEje")) $("eFilterDepEje").addEventListener("change", () => { actualizarOfis("eFilterDepEje", "eFilterOfiEje"); renderEvolucion(); });
   if ($("eSearchDepEje")) $("eSearchDepEje").addEventListener("input", renderEvolucion);
-  if ($("eFilterDepEje")) $("eFilterDepEje").addEventListener("change", renderEvolucion);
-  if ($("eSearchOfiEje")) $("eSearchOfiEje").addEventListener("input", renderEvolucion);
   if ($("eFilterOfiEje")) $("eFilterOfiEje").addEventListener("change", renderEvolucion);
+  if ($("eSearchOfiEje")) $("eSearchOfiEje").addEventListener("input", renderEvolucion);
 
+  if ($("sFilterDepSeg")) $("sFilterDepSeg").addEventListener("change", () => { actualizarOfis("sFilterDepSeg", "sFilterOfiSeg"); renderSeguimiento(); });
   if ($("sSearchDepSeg")) $("sSearchDepSeg").addEventListener("input", renderSeguimiento);
-  if ($("sFilterDepSeg")) $("sFilterDepSeg").addEventListener("change", renderSeguimiento);
-  if ($("sSearchOfiSeg")) $("sSearchOfiSeg").addEventListener("input", renderSeguimiento);
   if ($("sFilterOfiSeg")) $("sFilterOfiSeg").addEventListener("change", renderSeguimiento);
+  if ($("sSearchOfiSeg")) $("sSearchOfiSeg").addEventListener("input", renderSeguimiento);
 
   document.querySelectorAll(".js-refresh").forEach((b) =>
     b.addEventListener("click", async () => {

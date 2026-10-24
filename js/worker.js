@@ -21,20 +21,27 @@ function num(v) {
 }
 
 function procesarSANIPES(rows) {
-  const hIdx = 0;
+  // Buscamos automáticamente la fila que contenga la palabra "PIM" o "OFICINA"
+  let hIdx = 0;
+  for (let i = 0; i < rows.length; i++) {
+    if (rows[i] && rows[i].some(cell => cell && cell.toString().toUpperCase().includes("OFICINA"))) {
+      hIdx = i;
+      break;
+    }
+  }
   const headers = (rows[hIdx] || []).map(h => (h || "").toString().trim().toUpperCase());
   
-  const cOfi = headers.findIndex(h => h === "OFICINA");
-  const cDep = headers.findIndex(h => h === "DEPENDENCIA");
-  const cMeta = headers.findIndex(h => h === "META");
-  const cGen = headers.findIndex(h => h === "GEN");
+    const cOfi = headers.findIndex(h => h.includes("OFICINA"));
+  const cDep = headers.findIndex(h => h.includes("DEPENDENCIA"));
+  const cMeta = headers.findIndex(h => h === "META" || h.includes("META"));
+  const cGen = headers.findIndex(h => h === "GEN" || h.includes("GEN"));
   const cEsp = headers.findIndex(h => h.includes("ESP GASTO"));
   
-  const cPim = headers.findIndex(h => h.startsWith("PIM") && h.includes("(C)"));
-  const cCert = headers.findIndex(h => h.startsWith("CERTIFICADO") && h.includes("(D)"));
+  const cPim = headers.findIndex(h => h.includes("PIM") && h.includes("(C)"));
+  const cCert = headers.findIndex(h => h.includes("CERTIFICADO") && h.includes("(D)"));
   const cCompAnual = headers.findIndex(h => h.includes("COMPROMISO ANUAL"));
-  const cComp = headers.findIndex(h => h.startsWith("COMPROMISO") && !h.includes("ANUAL"));
-  const cDev = headers.findIndex(h => h.startsWith("DEVENGADO") && h.includes("(G)"));
+  const cComp = headers.findIndex(h => h.includes("COMPROMISO") && !h.includes("ANUAL"));
+  const cDev = headers.findIndex(h => h.includes("DEVENGADO") && h.includes("(G)"));
   const cSaldoCert = headers.findIndex(h => h.includes("SALDO") && h.includes("PIM - CERTIFICADO"));
   
   const cProgOct = headers.findIndex(h => h.includes("DEV PROY 10-OCT"));
@@ -58,7 +65,12 @@ function procesarSANIPES(rows) {
   for (let i = hIdx + 1; i < rows.length; i++) {
     const r = rows[i]; if (!r) continue;
     const ofi = norm(r[cOfi]); 
-    if (!ofi || ofi.toUpperCase().includes("TOTAL")) continue;
+const filaTexto = r.join(' ').toUpperCase(); // Junta todo el texto de la fila
+
+// Si la oficina está vacía, o si la fila contiene "TOTAL", o si empieza con muchos asteriscos, se salta.
+if (!ofi || ofi.toUpperCase().includes("TOTAL") || filaTexto.includes("TOTAL GENERAL") || filaTexto.startsWith("* *")) {
+    continue; 
+}
 
     const dep = norm(r[cDep]) || "SIN DEPENDENCIA";
     const meta = norm(r[cMeta]);
